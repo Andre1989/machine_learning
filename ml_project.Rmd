@@ -1,78 +1,179 @@
-The impact of severe weather events in US public health and economy
+Predicting exercise performance using machine learning algorithms
 ========================================================
+André Amorim
 
-Storms and other severe weather events can cause both public health and economic problems for communities and municipalities. Many severe events can result in fatalities, injuries, and property damage, and preventing such outcomes to the extent possible is a key concern. 
-This project had the objective of adressing which types of weather events are most harmful with respect to population health and which of them have the greatest economic consequences across the United States.
-Only reported events that occured between 1950 and 2011 were considered for this study.
-The results show that sudden and localized events such as tornadoes tend to be more deadlty for the US population. On the other hand, large scale long duration events that are easily predictable, such as hurricanes, are more destructive in respect to damage losses to the US economy.
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
+The goal of your project is to predict the manner in which they did the exercise. This is the "classe" variable in the training set.
+Tree predicting models were tested and the one with the best results was used to predict 20 test cases. The used modesl were a classification tree, a random forest and a boosting model. As expected, the random tree and boosting models yielded the best results, being the random tree slightly more accurate. However, in the end all the testing cases were correclty predicted either usingthe boosting model or the random tree.
 
-### Data Processing
+### Experimental setup
 
-The data was obtained from the U.S. National Oceanic and Atmospheric Administration's (NOAA) storm database and loaded to R from a .csv file. The events in the database start in the year 1950 and end in November 2011. In the earlier years of the database there are generally fewer events recorded, most likely due to a lack of good records. More recent years should be considered more complete.Consequentely, NA values were removed. 
-To facilitate the analysis, the dataset was divided into two datasets, one refering to the US population health and another to the US economy. Both datasets were filtered to include only the variables of interest. 
-For the population health, the data was ordered by fatalities and plotted in a barplot, showing the number of fatalities and injuries. 
-For the economy, the total damage was calculated as the sum of the crop damage and property damage. The data was ordered by total damage and presented in a barplot presenting the two types of damage as well as the total, in billion dollars. 
+Six young health participants were asked to perform one set of 10 repetitions of the Unilateral Dumbbell Biceps Curl in five different fashions: exactly according to the specification (Class A), throwing the elbows to the front (Class B), lifting the dumbbell only halfway (Class C), lowering the dumbbell only halfway (Class D) and throwing the hips to the front (Class E).
+Class A corresponds to the specified execution of the exercise, while the other 4 classes correspond to common mistakes. Participants were supervised by an experienced weight lifter to make sure the execution complied to the manner they were supposed to simulate. The exercises were performed by six male participants aged between 20-28 years, with little weight lifting experience. We made sure that all participants could easily simulate the mistakes in a safe and controlled manner by using a relatively light dumbbell (1.25kg).
+
+Read more: http://groupware.les.inf.puc-rio.br/har#ixzz3vZ4yWERt
+
+
+### Getting the data
+
+The data was obtained from the "Weight Lifting Exercises dataset, available at the webpage of the "Human Activity Recognition" project (http://groupware.les.inf.puc-rio.br/har).
 
 ```{r echo=TRUE, cache=TRUE}
-library("reshape2", lib.loc="D:/Documents/R/win-library/3.0")
-library(data.table)
-#load data
-mydata = read.csv(file='D:/Downloads/Descargas/repdata_data_StormData.csv/repdata_data_StormData.csv')
-#divide and clean datasets
-dmg_health = mydata[c('EVTYPE', 'FATALITIES', 'INJURIES')]
-dmg_economic = mydata[c('EVTYPE', 'PROPDMG', 'PROPDMGEXP', 'CROPDMG', 'CROPDMGEXP')]
-dmg_health_clean = dmg_health[complete.cases(dmg_health),]
-dmg_economic_clean = dmg_economic[complete.cases(dmg_economic),]
-#process population heath dataset
-dmg_health_clean_melted = melt(dmg_health_clean, id.vars = c("EVTYPE"))
-dmg_health_clean_melted_organised = dcast(dmg_health_clean_melted, EVTYPE ~ variable, fun=sum)
-dmg_health_clean_melted_organised = dmg_health_clean_melted_organised[order(dmg_health_clean_melted_organised$FATALITIES, decreasing = TRUE),]
-dmg_health_relevant = dmg_health_clean_melted_organised[1:10,]
-dmg_health_relevant$EVTYPE = as.character(dmg_health_relevant$EVTYPE)
-row.names(dmg_health_relevant) = dmg_health_relevant[,1]
-dmg_health_relevant[,1]=NULL
-dmg_health_relevant_table = as.table(t(as.matrix(dmg_health_relevant)))
-#process economy dataset
-dmg_economic_clean$PROPDMGMULT[dmg_economic_clean$PROPDMGEXP=='K']=1000
-dmg_economic_clean$PROPDMGMULT[dmg_economic_clean$PROPDMGEXP=='M']=1000000
-dmg_economic_clean$PROPDMGMULT[dmg_economic_clean$PROPDMGEXP=='B']=1000000000
-dmg_economic_clean$PROPDMGMULT[dmg_economic_clean$PROPDMGEXP=='']=0
-dmg_economic_clean$PROPDMG = dmg_economic_clean$PROPDMG*dmg_economic_clean$PROPDMGMULT
-dmg_economic_clean$CROPDMGMULT[dmg_economic_clean$PROPDMGEXP=='K']=1000
-dmg_economic_clean$CROPDMGMULT[dmg_economic_clean$PROPDMGEXP=='M']=1000000
-dmg_economic_clean$CROPDMGMULT[dmg_economic_clean$PROPDMGEXP=='B']=1000000000
-dmg_economic_clean$CROPDMGMULT[dmg_economic_clean$PROPDMGEXP=='']=0
-dmg_economic_clean$CROPDMG = dmg_economic_clean$CROPDMG*dmg_economic_clean$CROPDMGMULT
-dmg_economic_clean$PROPDMGEXP = NULL
-dmg_economic_clean$CROPDMGEXP = NULL
-dmg_economic_clean$PROPDMGMULT = NULL
-dmg_economic_clean$CROPDMGMULT = NULL
-dmg_economic_clean$TOTALDMG = dmg_economic_clean$PROPDMG + dmg_economic_clean$CROPDMG
-dmg_economic_clean_melted = melt(dmg_economic_clean, id.vars = c("EVTYPE"))
-dmg_economic_clean_melted_organised = dcast(dmg_economic_clean_melted, EVTYPE ~ variable, fun=sum)
-dmg_economic_clean_melted_organised = dmg_economic_clean_melted_organised[order(dmg_economic_clean_melted_organised$TOTALDMG, decreasing = TRUE),]
-dmg_economic_relevant = dmg_economic_clean_melted_organised[1:10,]
-row.names(dmg_economic_relevant) = dmg_economic_relevant[,1]
-dmg_economic_relevant[,1]=NULL
-dmg_economic_relevant = dmg_economic_relevant/1000000000
-dmg_economic_relevant_table = as.table(t(as.matrix(dmg_economic_relevant)))
+# Load necessary packages
+require(caret)
+require(rpart)
+require(rattle)
+require(ggplot2)
+# Load the data
+training_url = "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+testing_url = "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+#training_file = url(training_url)
+#testing_file = url(testing_url)
+training_file = "D:/Downloads/pml-training.csv"
+testing_file = "D:/Downloads/pml-testing.csv"
+trainingSet = read.csv(training_file, na.strings=c("NA",""), header=TRUE)
+testingSet = read.csv(testing_file, na.strings=c("NA",""), header=TRUE)
 ```
 
-### Results
+### Exploration of the outcome variable
 
-The two next barplots present the impact of severe weather events in US public health and economy. 
-The first plot refers only to the population health and presents the number of fatalities and injuries for the 10 most severe weather eventes, in a logarithmic scale. The weather event categories listed are: TORNADO; EXCESSIVE HEAT; FLASH FLOOD; HEAT; LIGHTNING; TSTM WIND; FLOOD; RIP CURRENT; HIGH WIND; AVALANCHE. The plot shows that for any event, there are much more injuries than fatalities, which is expected, since a fatality is a much more extreme case than an injury. The results also show that tornadoes are the most deadly events, with more than 5000 fatalities reported between 1950 and 2011 and almost 100000 injuries reported in the same period. Other deadly events are heat, floods, lightning, strong winds, rip currents and avalanches.
-The second plot refers only to economic damage, presenting the ammount of losses due to a type of weather event, in billion dollars. It presents the losses for property and crop damage, as well as the total of them. The weather event categories listed are: HURRICANE; HURRICANE/TYPHOON; STORM SURGE; WILDFIRE; RIVER FLOOD; HURRICANE OPAL/HIGH WINDS; TROPICAL STORM; STORM SURGE/TIDE; DROUGHT; TORNADOES, TSTM WIND, HAIL. We can see that tropical storms such as hurricanes or typhons are the main source of damage losses and that in these cases, the major contribution to the total losses comes from crop destruction and not from infrastructure and property losses. If we includ hurricanes and typhoons as the same type of tropical storm, we obtain losses that surpass 1600 billion dollars.  Less severe events such as other storms, floods or wildfires contribute with much less losses and in these cases, property damage plays a more significant contribution to the total losses, surpassing in some cases the crop damage.
+A brief exploration of the dataset was performed to have an idea about the behaviour of the outcome variable, "classe". We can see that it is a factor variable with 5 levels. All of them have a similar number of observations, with the category "A" with some more observations. Remind that this category corresponds to the right performance of the exercise.
 
-```{r fig.width=7, fig.height=6}
-#plot population health data
-barplot(dmg_health_relevant_table, log="y", las=2, col=c("darkblue","red"), ylab="Number of cases (log)", main="10 most harmful events to US population health", cex.names=0.8, beside=TRUE)
-legend("topright", legend = c("FATALITIES", "INJURIES"), fill = c("darkblue", "red"))
-#plot economy health data
-barplot(dmg_economic_relevant_table, col=c("darkblue","red", "black"), las=2, ylab="Billion dolars losses", main="10 most harmful events to US economy", cex.names=0.8, beside=TRUE)
-legend("topright", legend = c("PROP DAMAGE", "CROP DAMAGE", "TOTAL DAMAGE"), fill = c("darkblue", "red", "black"))
+```{r echo=TRUE, cache=TRUE, results='hide'}
+# Initial exploration of the dataset
+names(trainingSet)
+```
+```{r echo=TRUE, cache=TRUE}
+# Start by exploring the outcome. It is a categoric variable with 5 categories: A,B,C,D,E.
+head(trainingSet$classe)
+summary(trainingSet$classe)
 ```
 
-### Conclusions
+### Cleaning the data
 
-Comparing all the results, we can conclude that different weather events contribute to population health and economic problems. Despite tornadoes, which cause an excessive amount of injuries, there are many types of weather events that can affect the population health, causing both fatalities and injuries. On the other hand,  hurricanes and tropical storms are the main source of damage losses on the country's economy compared to any other type of event. Also, population tend to be more affected by sudden and local events, such as a tornado or an avalanche, that are hard to predict. Long duration events such as hurricanes are easy to be predicted and the population evacuated or protected. However, long duration events are much more destructive and assets that can not be properly moved or protected are eventualy destroyed with high damage costs.
+A lot of variables exist in the dataset. Some of them are related with the author's data processing procedures and are useless for us. The time window, the kurtosis, skewness, maximum and minimuns of variables are examples of this variables. These variables are computed from multiple observations and thus have a smaller length compared to the length of the obervations. The missing values are defined as "NA".
+Other variables not important for our analysis are the ones related with the data acquisiton, such as the name of the subject, the index variable or time stamps.
+Variables related with the author's data processing procedures can be removed by looking for missing values. Since they have a smaller length compared with the lenght of the observations, they have a lot of missing values. A small exploration of the dataset shows that they have high proportion of missing values. All other variables are complete and have no missing values. We can therefore define a threshold of proportion of missing values in order to remove them. A threshold of 70% is enough.
+Data acquisition variables correspond to just the first 7 columns of the dataset and are easily removed.
+Both the provided training and testing sets were cleaned the same way.
+
+```{r echo=TRUE, cache=TRUE, results='hide'}
+# Cleaning the data
+# Remove empty variables or variables with more than 70% of missing values
+threshold = 0.70
+NA_counts = colSums(is.na(trainingSet))
+NA_counts_fraction = NA_counts/dim(trainingSet)[1]
+columns_keep = NA_counts_fraction<threshold
+trainingSet_clean1 <- trainingSet[,columns_keep]
+testingSet_clean1 = testingSet[,columns_keep]
+# Remove the first 7 variables. They are related with the author's data analysis and are here unecessary
+trainingSet_clean2 <- trainingSet_clean1[,-7:-1]
+testingSet_clean2 = testingSet_clean1[,-7:-1]
+names(trainingSet_clean2)
+```
+
+### Exploratory analysis
+
+Some variables are force or movement vectors, with an "x", "y" and "z" spatial components. However, they have also a "total"" component, suspicious of being the norm of the "xyz" components, or a scaled version of it. If this is true, they are not necessary and will introduce bias to the model, so they should be removed. A feature plot was made in order to analyse the correlation between the "total" component variables and the "individual" component variables. The plots show that they are in fact correlated, so they were removed by searching variables with the term "total" in their name.
+variables with zero variability were also checked, but no one was found. All included features seem to have significant variability.
+Both the provided training and testing sets were cleaned the same way.
+
+```{r fig.width=7, fig.height=6, echo=TRUE, cache=TRUE, results='hide'}
+# Exploratory analysis
+accel_belt_components = c("total_accel_belt", "accel_belt_x", "accel_belt_y", "accel_belt_z")
+accel_arm_components = c("total_accel_arm", "accel_arm_x", "accel_arm_y", "accel_arm_z")
+accel_dumbbell_components = c("total_accel_dumbbell", "accel_dumbbell_x", "accel_dumbbell_y", "accel_dumbbell_z")
+accel_forearm_components = c("total_accel_forearm", "accel_forearm_x", "accel_forearm_y", "accel_forearm_z")
+# Evaluating if the total component of movement depends on the x,y,z components
+featurePlot(x=trainingSet_clean2[,accel_belt_components],y = trainingSet_clean2$classe,plot="pairs")
+featurePlot(x=trainingSet_clean2[,accel_arm_components],y = trainingSet_clean2$classe,plot="pairs")
+featurePlot(x=trainingSet_clean2[,accel_dumbbell_components],y = trainingSet_clean2$classe,plot="pairs")
+featurePlot(x=trainingSet_clean2[,accel_forearm_components],y = trainingSet_clean2$classe,plot="pairs")
+# Remove variables with the term "total"
+trainingSet_clean3 = trainingSet_clean2[,-grep("total",names(trainingSet_clean2))]
+testingSet_clean3 = testingSet_clean2[,-grep("total",names(testingSet_clean2))]
+# Check for covariates that have virtually no variablility
+nsv <- nearZeroVar(trainingSet_clean3, saveMetrics=TRUE)
+```
+
+### Machine learning algoritm
+
+Since we are working with a categoric outcome, a random tree model seems appropriate. A simple tree classifier is going to be tested due to its simple interpretability. Then, a more efficient random forest model will be used as the main model. A boosting model will also be used, to compare with the random forest model.
+The first step is ti split the data into a training set and a testing set. Only 30% of the provided training set was used, due to computation time reasons. The provided testing set is let untouched for now. It will be only used to predict the 20 testing cases.
+From the 30% of the training data, we are going to build a predicting model. We splitted it into a training and setting subsets, 60% for training and 40% for testing. They will be called as the training and testing data.
+Since splitting is random, a seed is set before, for reproducibility. This seed is going to be used for the rest of this study.
+All variables were coerced to numeric format (except the outcome, which is a factor). This facilitates their manipulation by the prediction models.
+
+```{r echo=TRUE, cache=TRUE}
+# Setting the seed
+set.seed(12345)
+
+# Coerce the variables to numeric, except the outcome
+for (i in 1:(length(trainingSet_clean3)-1)) {
+  trainingSet_clean3[,i] = as.numeric(trainingSet_clean3[,i])
+}
+
+# Splitting the data
+# The dataset is very big. Lets create a smaller dataset of about 30% of the original
+trainingIdx1 = createDataPartition(trainingSet_clean3$classe, p=0.30, list=FALSE)
+trainingData2 = trainingSet_clean3[trainingIdx1,]
+# Splitting into training and testing dataset
+trainingIdx2 = createDataPartition(trainingData2$classe, p=0.60, list=FALSE)
+trainingData = trainingData2[trainingIdx2,]
+testingData = trainingData2[-trainingIdx2,]
+dim(trainingData)
+dim(testingData)
+```
+
+The training data was then used to train the prediction model. First, the tree model was created, then the random forest and finally the boosting model. A 5 fold cross-validation was used. The remaining training options were let with the default settings of the "caret" package.
+The tree model was analysed due to its simplicity and interpretability. Looking at he tree, we see it is extremely simple and it doen't include category "D" of the outcome. This obviously is not a good model, since as it was seen in the exploratory of the outcome, all categories have a similar number of observations. A better model seems to be needed.
+
+```{r echo=TRUE, cache=TRUE}
+# Training
+# Train the data with a simple tree classifier. It is easy to interpret
+modelFit = train(classe~., data = trainingData, method = "rpart", trControl=trainControl(method="cv",number=5))
+print(modelFit)
+print(modelFit$finalModel)
+fancyRpartPlot(modelFit$finalModel)
+# Train the data with a random forest classifier.
+modelFit2 = train(classe~., data = trainingData, method = "rf", trControl=trainControl(method="cv",number=5), prox=TRUE)
+# Train the data with a boosting classifier.
+modelFit3 = train(classe~., data = trainingData, method = "gbm", trControl=trainControl(method="cv",number=5), verbose=FALSE)
+```
+
+The final step was to test and compare the models. This was done by building the confusion matrix for each model and comparing their accuracy (and possibly the Kappa value). We expect the simple tree model to have a greater out of sample error compared with the much more efficient random forest and boosting models. These are very efficient models and their error should be competitive between both models.
+As expected, the simple tree model has the worst accuracy, only about 50%. The confusion matrix shows the same has the tree diagram. Category "D" of the outcome is not even predicted. A better model is really needed.
+The random forest and boosting models have plus than 95% accuracy and a nice confusion matrix. The random forest seem to be slightly better, but both models are very good. The Kappa value is also in accordance with these conclusions.
+The accuracy is considered a measure of the out of sample error. We can conclude, the model with smaller out of sample error was the random forest. The error of the boosting model is almost the same. Finally, as expected, the simple tree model has the greatest out of sample error and doesn't seem to be appropriate for prediction in this project.
+
+```{r echo=TRUE, cache=TRUE}
+# Testing the models
+# Model 1
+predictions1 <- predict(modelFit, newdata=testingData)
+confusionMatrix(predictions1, testingData$classe)
+# Model 2
+predictions2 <- predict(modelFit2, newdata=testingData)
+confusionMatrix(predictions2, testingData$classe)
+# Model 3
+predictions3 <- predict(modelFit3, newdata=testingData)
+confusionMatrix(predictions3, testingData$classe)
+```
+
+### Predicting the 20 testing cases
+
+The final part of the project is to preditc 20 test cases, provided at the begining of the project. The 3 models were tested. The random forest and boosting models yielded exaclty the same results. The simple tree model provided bad results, with no "D" category outcomes.
+The random forest and boosting models provided accurate results for all testing cases. 
+
+```{r echo=TRUE, cache=TRUE}
+# Predicting the testing values
+p1 = predict(modelFit, newdata=testingSet_clean3)
+p2 = predict(modelFit2, newdata=testingSet_clean3)
+p3 = predict(modelFit3, newdata=testingSet_clean3)
+data.frame(p1,p2,p3)
+# Model 2 and 3 predict the same results
+```
+
+### Conclusion
+
+Three models were build to predict the type of exercise performed by subjects. The model with smaller out of sample error was the random forest. The error of the boosting model is almost the same. As expected, the simple tree model has the greates out of sample error. 
+In conclusion, The random forest and boosting models seem to be very efficient doing this task and are so both recommended for future predictions.
