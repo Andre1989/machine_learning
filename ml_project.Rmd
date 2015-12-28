@@ -1,14 +1,8 @@
 Predicting exercise performance using machine learning algorithms
 ========================================================
-<<<<<<< HEAD
 Andr� Amorim
 
 Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
-=======
-André Amorim
-
-Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
->>>>>>> c1dd0c96e7342d469747bb6ece7b2c52111fb029
 The goal of your project is to predict the manner in which they did the exercise. This is the "classe" variable in the training set.
 Tree predicting models were tested and the one with the best results was used to predict 20 test cases. The used modesl were a classification tree, a random forest and a boosting model. As expected, the random tree and boosting models yielded the best results, being the random tree slightly more accurate. However, in the end all the testing cases were correclty predicted either usingthe boosting model or the random tree.
 
@@ -182,8 +176,4 @@ data.frame(p1,p2,p3)
 ### Conclusion
 
 Three models were build to predict the type of exercise performed by subjects. The model with smaller out of sample error was the random forest. The error of the boosting model is almost the same. As expected, the simple tree model has the greates out of sample error. 
-<<<<<<< HEAD
 In conclusion, The random forest and boosting models seem to be very efficient doing this task and are so both recommended for future predictions.
-=======
-In conclusion, The random forest and boosting models seem to be very efficient doing this task and are so both recommended for future predictions.
->>>>>>> c1dd0c96e7342d469747bb6ece7b2c52111fb029
