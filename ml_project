@@ -1,0 +1,78 @@
+The impact of severe weather events in US public health and economy
+========================================================
+
+Storms and other severe weather events can cause both public health and economic problems for communities and municipalities. Many severe events can result in fatalities, injuries, and property damage, and preventing such outcomes to the extent possible is a key concern. 
+This project had the objective of adressing which types of weather events are most harmful with respect to population health and which of them have the greatest economic consequences across the United States.
+Only reported events that occured between 1950 and 2011 were considered for this study.
+The results show that sudden and localized events such as tornadoes tend to be more deadlty for the US population. On the other hand, large scale long duration events that are easily predictable, such as hurricanes, are more destructive in respect to damage losses to the US economy.
+
+### Data Processing
+
+The data was obtained from the U.S. National Oceanic and Atmospheric Administration's (NOAA) storm database and loaded to R from a .csv file. The events in the database start in the year 1950 and end in November 2011. In the earlier years of the database there are generally fewer events recorded, most likely due to a lack of good records. More recent years should be considered more complete.Consequentely, NA values were removed. 
+To facilitate the analysis, the dataset was divided into two datasets, one refering to the US population health and another to the US economy. Both datasets were filtered to include only the variables of interest. 
+For the population health, the data was ordered by fatalities and plotted in a barplot, showing the number of fatalities and injuries. 
+For the economy, the total damage was calculated as the sum of the crop damage and property damage. The data was ordered by total damage and presented in a barplot presenting the two types of damage as well as the total, in billion dollars. 
+
+```{r echo=TRUE, cache=TRUE}
+library("reshape2", lib.loc="D:/Documents/R/win-library/3.0")
+library(data.table)
+#load data
+mydata = read.csv(file='D:/Downloads/Descargas/repdata_data_StormData.csv/repdata_data_StormData.csv')
+#divide and clean datasets
+dmg_health = mydata[c('EVTYPE', 'FATALITIES', 'INJURIES')]
+dmg_economic = mydata[c('EVTYPE', 'PROPDMG', 'PROPDMGEXP', 'CROPDMG', 'CROPDMGEXP')]
+dmg_health_clean = dmg_health[complete.cases(dmg_health),]
+dmg_economic_clean = dmg_economic[complete.cases(dmg_economic),]
+#process population heath dataset
+dmg_health_clean_melted = melt(dmg_health_clean, id.vars = c("EVTYPE"))
+dmg_health_clean_melted_organised = dcast(dmg_health_clean_melted, EVTYPE ~ variable, fun=sum)
+dmg_health_clean_melted_organised = dmg_health_clean_melted_organised[order(dmg_health_clean_melted_organised$FATALITIES, decreasing = TRUE),]
+dmg_health_relevant = dmg_health_clean_melted_organised[1:10,]
+dmg_health_relevant$EVTYPE = as.character(dmg_health_relevant$EVTYPE)
+row.names(dmg_health_relevant) = dmg_health_relevant[,1]
+dmg_health_relevant[,1]=NULL
+dmg_health_relevant_table = as.table(t(as.matrix(dmg_health_relevant)))
+#process economy dataset
+dmg_economic_clean$PROPDMGMULT[dmg_economic_clean$PROPDMGEXP=='K']=1000
+dmg_economic_clean$PROPDMGMULT[dmg_economic_clean$PROPDMGEXP=='M']=1000000
+dmg_economic_clean$PROPDMGMULT[dmg_economic_clean$PROPDMGEXP=='B']=1000000000
+dmg_economic_clean$PROPDMGMULT[dmg_economic_clean$PROPDMGEXP=='']=0
+dmg_economic_clean$PROPDMG = dmg_economic_clean$PROPDMG*dmg_economic_clean$PROPDMGMULT
+dmg_economic_clean$CROPDMGMULT[dmg_economic_clean$PROPDMGEXP=='K']=1000
+dmg_economic_clean$CROPDMGMULT[dmg_economic_clean$PROPDMGEXP=='M']=1000000
+dmg_economic_clean$CROPDMGMULT[dmg_economic_clean$PROPDMGEXP=='B']=1000000000
+dmg_economic_clean$CROPDMGMULT[dmg_economic_clean$PROPDMGEXP=='']=0
+dmg_economic_clean$CROPDMG = dmg_economic_clean$CROPDMG*dmg_economic_clean$CROPDMGMULT
+dmg_economic_clean$PROPDMGEXP = NULL
+dmg_economic_clean$CROPDMGEXP = NULL
+dmg_economic_clean$PROPDMGMULT = NULL
+dmg_economic_clean$CROPDMGMULT = NULL
+dmg_economic_clean$TOTALDMG = dmg_economic_clean$PROPDMG + dmg_economic_clean$CROPDMG
+dmg_economic_clean_melted = melt(dmg_economic_clean, id.vars = c("EVTYPE"))
+dmg_economic_clean_melted_organised = dcast(dmg_economic_clean_melted, EVTYPE ~ variable, fun=sum)
+dmg_economic_clean_melted_organised = dmg_economic_clean_melted_organised[order(dmg_economic_clean_melted_organised$TOTALDMG, decreasing = TRUE),]
+dmg_economic_relevant = dmg_economic_clean_melted_organised[1:10,]
+row.names(dmg_economic_relevant) = dmg_economic_relevant[,1]
+dmg_economic_relevant[,1]=NULL
+dmg_economic_relevant = dmg_economic_relevant/1000000000
+dmg_economic_relevant_table = as.table(t(as.matrix(dmg_economic_relevant)))
+```
+
+### Results
+
+The two next barplots present the impact of severe weather events in US public health and economy. 
+The first plot refers only to the population health and presents the number of fatalities and injuries for the 10 most severe weather eventes, in a logarithmic scale. The weather event categories listed are: TORNADO; EXCESSIVE HEAT; FLASH FLOOD; HEAT; LIGHTNING; TSTM WIND; FLOOD; RIP CURRENT; HIGH WIND; AVALANCHE. The plot shows that for any event, there are much more injuries than fatalities, which is expected, since a fatality is a much more extreme case than an injury. The results also show that tornadoes are the most deadly events, with more than 5000 fatalities reported between 1950 and 2011 and almost 100000 injuries reported in the same period. Other deadly events are heat, floods, lightning, strong winds, rip currents and avalanches.
+The second plot refers only to economic damage, presenting the ammount of losses due to a type of weather event, in billion dollars. It presents the losses for property and crop damage, as well as the total of them. The weather event categories listed are: HURRICANE; HURRICANE/TYPHOON; STORM SURGE; WILDFIRE; RIVER FLOOD; HURRICANE OPAL/HIGH WINDS; TROPICAL STORM; STORM SURGE/TIDE; DROUGHT; TORNADOES, TSTM WIND, HAIL. We can see that tropical storms such as hurricanes or typhons are the main source of damage losses and that in these cases, the major contribution to the total losses comes from crop destruction and not from infrastructure and property losses. If we includ hurricanes and typhoons as the same type of tropical storm, we obtain losses that surpass 1600 billion dollars.  Less severe events such as other storms, floods or wildfires contribute with much less losses and in these cases, property damage plays a more significant contribution to the total losses, surpassing in some cases the crop damage.
+
+```{r fig.width=7, fig.height=6}
+#plot population health data
+barplot(dmg_health_relevant_table, log="y", las=2, col=c("darkblue","red"), ylab="Number of cases (log)", main="10 most harmful events to US population health", cex.names=0.8, beside=TRUE)
+legend("topright", legend = c("FATALITIES", "INJURIES"), fill = c("darkblue", "red"))
+#plot economy health data
+barplot(dmg_economic_relevant_table, col=c("darkblue","red", "black"), las=2, ylab="Billion dolars losses", main="10 most harmful events to US economy", cex.names=0.8, beside=TRUE)
+legend("topright", legend = c("PROP DAMAGE", "CROP DAMAGE", "TOTAL DAMAGE"), fill = c("darkblue", "red", "black"))
+```
+
+### Conclusions
+
+Comparing all the results, we can conclude that different weather events contribute to population health and economic problems. Despite tornadoes, which cause an excessive amount of injuries, there are many types of weather events that can affect the population health, causing both fatalities and injuries. On the other hand,  hurricanes and tropical storms are the main source of damage losses on the country's economy compared to any other type of event. Also, population tend to be more affected by sudden and local events, such as a tornado or an avalanche, that are hard to predict. Long duration events such as hurricanes are easy to be predicted and the population evacuated or protected. However, long duration events are much more destructive and assets that can not be properly moved or protected are eventualy destroyed with high damage costs.
